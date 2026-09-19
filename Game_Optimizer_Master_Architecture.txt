@@ -1,0 +1,1285 @@
+GAME PERFORMANCE OPTIMIZER C++
+MASTER ARCHITECTURE / DESIGN SPECIFICATION
+============================================
+
+PURPOSE
+-------
+Build an Adaptive Windows/Game Performance Optimizer.
+
+Primary goal:
+- Reduce stutter.
+- Improve frame-time stability.
+- Reduce input latency where possible.
+- Reduce CPU/GPU/system contention.
+- Reduce unnecessary background interference.
+- Improve consistency of the Windows/game environment.
+- Adapt optimization to the actual hardware, Windows state, game, workload,
+  and measured behavior.
+
+FPS IS NOT THE PRIMARY OBJECTIVE.
+FPS may be measured, but it is not the sole or primary decision metric.
+
+IMPORTANT PROJECT DIVISION
+--------------------------
+THIS CONVERSATION:
+- Collect and organize optimization techniques.
+- Evaluate technical mechanisms.
+- Build the Master Technique List.
+- Build the architecture, dependencies, conflicts, verification methods,
+  and adaptive rules.
+
+OTHER DATA/EVIDENCE CONVERSATION:
+- Collect real-world benchmarks.
+- Collect experiments.
+- Collect before/after measurements.
+- Collect hardware/game/Windows conditions.
+- Collect positive and negative results.
+
+FINAL PROCESS:
+TECHNIQUE INVENTORY
++
+REAL-WORLD DATA
++
+MICROSOFT / TECHNICAL DOCUMENTATION
+→ CROSS-CHECK
+→ TECHNIQUE EVALUATION
+→ KEEP / CONDITIONAL / EXPERIMENTAL / REJECT
+→ DEPENDENCY / CONFLICT ANALYSIS
+→ ADAPTIVE RULES
+→ FINAL TECHNIQUE DATABASE
+→ IMPLEMENTATION
+→ VERIFICATION
+
+
+============================================================
+CORE ARCHITECTURE
+============================================================
+
+                         GAME OPTIMIZER
+                               │
+              ┌────────────────┼────────────────┐
+              │                │                │
+          DETECTION         DIAGNOSIS       MEASUREMENT
+              │                │                │
+              ↓                ↓                ↓
+          Hardware          CPU issue       Frame-time
+          Windows           GPU issue       Input latency
+          Game              Memory issue    DPC / ISR
+          Process           I/O issue       Network
+          Driver            Network issue   Thermal
+          Power             Scheduler       CPU / GPU state
+          Topology          Driver issue    RAM / VRAM
+              │                │                │
+              └────────────────┼────────────────┘
+                               ↓
+                     TECHNIQUE SELECTOR
+                               ↓
+                DEPENDENCY / CONFLICT CHECK
+                               ↓
+                            BACKUP
+                               ↓
+                             APPLY
+                               ↓
+                            VERIFY
+                               ↓
+                           MEASURE
+                               ↓
+                      ┌────────┴────────┐
+                      ↓                 ↓
+                    KEEP             ROLLBACK
+                      │                 │
+                      └────────┬────────┘
+                               ↓
+                    UPDATE SESSION STATE
+                               ↓
+                     GAME STILL RUNNING?
+                         │           │
+                        YES          NO
+                         │           │
+                         └──→ LOOP   RESTORE
+
+
+============================================================
+FULL OPERATING FLOW
+============================================================
+
+1. SCAN SYSTEM
+2. BUILD HARDWARE PROFILE
+3. BUILD WINDOWS PROFILE
+4. DETECT GAME
+5. DETECT GAME PROCESS TREE
+6. DETECT DRIVER / POWER / TOPOLOGY STATE
+7. MEASURE BASELINE
+8. DIAGNOSE CURRENT BOTTLENECK / CONTENTION
+9. GENERATE CANDIDATE TECHNIQUES
+10. CHECK EVIDENCE STATUS
+11. CHECK HARDWARE COMPATIBILITY
+12. CHECK WINDOWS COMPATIBILITY
+13. CHECK GAME/API COMPATIBILITY
+14. CHECK DEPENDENCIES
+15. CHECK CONFLICTS
+16. BACKUP ORIGINAL STATE
+17. APPLY SELECTED TECHNIQUE(S)
+18. VERIFY ACTUAL STATE
+19. MEASURE AFTER STATE
+20. COMPARE BEFORE / AFTER
+21. KEEP OR ROLLBACK
+22. UPDATE SESSION STATE
+23. CONTINUE MONITORING WHILE GAME RUNS
+24. RE-DIAGNOSE IF STATE CHANGES
+25. RESTORE TEMPORARY CHANGES WHEN GAME EXITS
+26. VERIFY RESTORE
+27. STORE SESSION RESULT
+
+
+============================================================
+1. DETECTION ENGINE
+============================================================
+
+Hardware detection:
+- CPU model.
+- Physical cores.
+- Logical processors.
+- P-core / E-core topology.
+- CPU cache topology.
+- CPU package/socket.
+- NUMA topology.
+- GPU model.
+- GPU vendor.
+- GPU VRAM.
+- RAM capacity.
+- RAM configuration.
+- Storage type.
+- NVMe / SSD / HDD detection.
+- Network adapter.
+- Audio devices.
+- USB/HID devices.
+- Hardware sensors.
+- Temperature sensors.
+- Power sensors where available.
+
+Windows detection:
+- Windows version.
+- Windows build.
+- Edition.
+- Game Mode state.
+- Graphics settings.
+- Power plan.
+- AC/DC state.
+- Processor power settings.
+- EPP state.
+- Core parking state.
+- Power throttling state.
+- HAGS state.
+- VRR state.
+- V-Sync-related state where detectable.
+- Windows Update state.
+- Service state.
+- Startup state.
+- Scheduled task state.
+- Background application state.
+- Security/Defender state.
+- Registry state.
+- System integrity state.
+
+Game detection:
+- Game executable.
+- Launcher.
+- Parent process.
+- Child processes.
+- Process tree.
+- Foreground process.
+- Game start.
+- Game exit.
+- Game API when detectable.
+- DX11 / DX12 / Vulkan where detectable.
+- Fullscreen / borderless / windowed where detectable.
+- Active GPU used by game where detectable.
+- Anti-cheat presence/compatibility where detectable.
+
+Driver detection:
+- GPU driver.
+- Network driver.
+- Audio driver.
+- Storage driver.
+- Device errors.
+- Driver versions.
+- Relevant driver activity.
+
+
+============================================================
+2. DIAGNOSIS ENGINE
+============================================================
+
+The optimizer MUST NOT assume the problem before measuring.
+
+Possible diagnoses:
+- CPU contention.
+- GPU saturation.
+- CPU scheduling contention.
+- Memory pressure.
+- VRAM pressure.
+- Storage/I/O contention.
+- Network latency.
+- Network jitter.
+- Packet loss.
+- DPC spikes.
+- ISR spikes.
+- Driver latency.
+- Thermal throttling.
+- Power throttling.
+- Clock instability.
+- Background process interference.
+- Service interference.
+- Render queue issue.
+- Frame pacing issue.
+- Input latency issue.
+- Audio latency issue.
+- Game-specific behavior.
+- Windows configuration conflict.
+
+Diagnosis principle:
+CURRENT STATE → MEASUREMENT → PROBLEM CLASSIFICATION → TECHNIQUE CANDIDATES.
+
+
+============================================================
+3. MEASUREMENT ENGINE
+============================================================
+
+Baseline MUST be created before major optimization.
+
+Measurements:
+- Frame time.
+- Frame-time variance.
+- 1% low.
+- 0.1% low where useful.
+- FPS as a secondary metric.
+- CPU utilization.
+- Per-core CPU utilization.
+- CPU frequency.
+- CPU package power where available.
+- GPU utilization.
+- GPU frequency.
+- GPU power where available.
+- VRAM usage.
+- RAM usage.
+- Memory pressure.
+- Commit usage.
+- Disk activity.
+- Per-process I/O.
+- Storage latency.
+- Network latency.
+- Jitter.
+- Packet loss.
+- DPC latency.
+- ISR latency.
+- Interrupt activity.
+- Input latency where measurable.
+- Temperature.
+- Thermal throttling.
+- Power throttling.
+- Process contention.
+- Background CPU activity.
+
+Measurement principle:
+DO NOT KEEP A TECHNIQUE JUST BECAUSE AN API CALL SUCCEEDED.
+
+The actual state and performance behavior must be verified.
+
+
+============================================================
+4. TECHNIQUE SELECTOR
+============================================================
+
+The selector chooses techniques based on:
+
+- Hardware.
+- Windows version/build.
+- CPU topology.
+- GPU.
+- RAM.
+- Storage.
+- Network.
+- Power state.
+- Laptop/desktop.
+- Game.
+- Game API.
+- Game process tree.
+- Current bottleneck.
+- Current background load.
+- Existing Windows settings.
+- Evidence level.
+- Dependencies.
+- Conflicts.
+- Risk.
+- Previous measured results.
+
+Example:
+
+CPU contention HIGH
++ hybrid CPU
++ AC power
++ background load HIGH
+
+→ CPU/process/power/background candidates.
+
+GPU saturation HIGH
++ CPU contention LOW
+
+→ do NOT blindly apply CPU tweaks.
+
+The selector must choose only relevant candidates.
+
+
+============================================================
+5. DEPENDENCY / CONFLICT ENGINE
+============================================================
+
+Before APPLY:
+
+- Does technique require another technique?
+- Does it conflict with another technique?
+- Is it compatible with this Windows version?
+- Is it compatible with this CPU?
+- Is it compatible with this GPU?
+- Is it compatible with this game?
+- Is it compatible with this API?
+- Is it compatible with anti-cheat?
+- Does another technique already control the same setting?
+- Is the setting already at the requested state?
+- Can it be safely restored?
+
+Example:
+CPU affinity and CPU Sets must not be treated as independent blind tweaks.
+
+Every technique should have:
+- Dependencies.
+- Conflicts.
+- Preconditions.
+- Postconditions.
+
+
+============================================================
+6. BACKUP ENGINE
+============================================================
+
+Before reversible system changes:
+
+- Registry backup.
+- Power-plan backup.
+- Process priority state.
+- Process affinity state.
+- CPU Sets state.
+- Service state.
+- Relevant configuration.
+- Game configuration where modified.
+- Original values.
+- Session state.
+
+Temporary game-session changes MUST have a restoration path.
+
+
+============================================================
+7. APPLY ENGINE
+============================================================
+
+Apply only selected techniques.
+
+Possible application areas:
+- Process priority.
+- CPU affinity.
+- CPU Sets.
+- P/E-core allocation.
+- Core parking.
+- Power plan.
+- Processor min/max state.
+- EPP.
+- Power throttling.
+- Background process management.
+- Services.
+- Scheduled tasks.
+- I/O priority.
+- GPU profile.
+- Network profile.
+- Input/USB settings.
+- Game configuration.
+- Frame limiter.
+- Other verified techniques.
+
+Do not apply every available tweak.
+
+The selector decides what is relevant.
+
+
+============================================================
+8. VERIFY ENGINE
+============================================================
+
+Verification must check the REAL resulting state.
+
+Example:
+
+Requested:
+CPU Priority = HIGH
+
+Verify:
+Actual process priority = HIGH
+
+Requested:
+Power setting = X
+
+Verify:
+Actual power setting = X
+
+Requested:
+Affinity = selected CPU set
+
+Verify:
+Actual affinity/CPU set = selected value
+
+If verification fails:
+- Mark application failed.
+- Do not assume success.
+- Roll back when appropriate.
+
+
+============================================================
+9. KEEP / ROLLBACK ENGINE
+============================================================
+
+BEFORE
+  ↓
+APPLY
+  ↓
+VERIFY
+  ↓
+MEASURE AFTER
+  ↓
+COMPARE
+
+KEEP if:
+- Target metric improves.
+- No significant regression.
+- System remains stable.
+- Compatibility remains acceptable.
+- Result is consistent enough for the relevant condition.
+
+ROLLBACK if:
+- No useful improvement.
+- Target metric becomes worse.
+- Stutter increases.
+- Input latency increases.
+- System responsiveness degrades.
+- Stability/compatibility becomes worse.
+- Verification fails.
+- A conflict appears.
+
+The decision must be based on measured results, not assumptions.
+
+
+============================================================
+10. SESSION STATE ENGINE
+============================================================
+
+While game is running:
+
+MONITOR
+→ DETECT STATE CHANGE
+→ RE-DIAGNOSE
+→ RE-EVALUATE TECHNIQUES
+→ ADJUST ONLY WHEN JUSTIFIED
+→ VERIFY
+→ MEASURE
+
+When game exits:
+
+GAME EXIT
+→ RESTORE TEMPORARY CHANGES
+→ VERIFY RESTORE
+→ SAVE SESSION RESULT
+
+
+============================================================
+11. ADAPTIVE LEARNING / RESULT DATABASE
+============================================================
+
+After every measured session, store:
+
+- Hardware profile.
+- Windows profile.
+- Game.
+- Game API.
+- Driver state.
+- Power state.
+- Diagnosed bottleneck.
+- Technique used.
+- Combination used.
+- Preconditions.
+- Before measurements.
+- After measurements.
+- Keep/rollback result.
+- Regression information.
+- Stability information.
+- Compatibility information.
+
+Example:
+
+TECHNIQUE:
+CPU Priority HIGH
+
+CONDITION:
+Hardware X
+Windows Y
+Game Z
+CPU contention HIGH
+
+RESULT:
+KEEP
+
+This does NOT mean:
+HIGH is always good.
+
+It means:
+HIGH produced an acceptable measured result under condition X/Y/Z.
+
+
+============================================================
+12. MASTER TECHNIQUE EVALUATION STATUS
+============================================================
+
+A — CORE / STRONG FOUNDATION
+- Required or strongly justified system infrastructure.
+- Detection.
+- Measurement.
+- Verification.
+- Backup.
+- Rollback.
+- Adaptive selection.
+- Hardware awareness.
+- Game detection.
+- Session management.
+
+B — CONDITIONAL
+- Useful under specific conditions.
+- Must be selected adaptively.
+- Requires compatibility/evidence checks.
+
+C — EXPERIMENTAL
+- Technical mechanism exists or implementations exist.
+- Evidence is insufficient or behavior is highly workload-dependent.
+- Never blindly enable by default.
+
+D — LOW PRIORITY / REJECT CANDIDATE
+- Weak justification.
+- High downside relative to expected value.
+- No meaningful measured benefit.
+- Or better alternatives exist.
+
+IMPORTANT:
+This status is an engineering evaluation layer.
+Final classification must be updated after cross-checking REAL-WORLD DATA.
+
+
+============================================================
+13. MASTER TECHNIQUE INVENTORY
+============================================================
+
+CPU / PROCESS MANAGEMENT
+------------------------
+- Game process detection.
+- Process priority.
+- Above Normal priority.
+- High priority.
+- Realtime priority.
+- Thread priority.
+- CPU affinity.
+- CPU Sets.
+- Selected CPU Sets.
+- P-core/E-core detection.
+- P-core/E-core allocation.
+- Core pinning.
+- Core parking.
+- Background CPU demotion.
+- Background process suspension.
+- Process QoS.
+- Thread QoS.
+- Process power throttling.
+- Descendant process handling.
+- Priority restoration.
+- Process contention detection.
+- Process tree management.
+- CPU topology awareness.
+- CPU cache awareness.
+- NUMA awareness.
+- Cache-aware placement.
+
+MMCSS / SCHEDULING
+------------------
+- MMCSS detection.
+- MMCSS task categories.
+- MMCSS thread priority.
+- Audio/MMCSS interaction.
+- Game/MMCSS interaction.
+- MMCSS registry configuration.
+- SystemResponsiveness analysis.
+- MMCSS task profile tuning.
+
+CPU POWER MANAGEMENT
+--------------------
+- Balanced profile analysis.
+- High Performance.
+- Ultimate Performance.
+- Game Mode power profile analysis.
+- Minimum processor state.
+- Maximum processor state.
+- CPMinCores.
+- CPMaxCores.
+- Core parking policy.
+- EPP.
+- Performance preference.
+- Performance increase policy.
+- Performance decrease policy.
+- Performance thresholds.
+- LatencyHintEpp.
+- Heterogeneous CPU policies.
+- Autonomous performance.
+- Power throttling.
+- Execution-speed throttling.
+- AC/DC profiles.
+- Dynamic power-plan switching.
+- Hidden processor settings.
+
+TIMER / CLOCK
+------------
+- Timer-resolution detection.
+- Current timer-resolution monitoring.
+- timeBeginPeriod interaction.
+- NtSetTimerResolution analysis.
+- Timer-resolution optimization.
+- QueryPerformanceCounter measurement.
+- QueryPerformanceFrequency.
+- TSC stability analysis.
+- Clock-source analysis.
+- Timer-resolution impact measurement.
+
+DPC / ISR / INTERRUPTS
+----------------------
+- DPC latency monitoring.
+- ISR latency monitoring.
+- DPC spike detection.
+- Driver latency detection.
+- Network-driver latency detection.
+- Audio-driver latency detection.
+- GPU-driver latency detection.
+- Interrupt frequency monitoring.
+- Interrupt affinity analysis.
+- IRQ affinity modification.
+- MSI/MSI-X analysis.
+- Interrupt priority analysis.
+
+MEMORY
+------
+- RAM monitoring.
+- Available memory.
+- Memory pressure detection.
+- Commit usage.
+- Commit limit.
+- Working-set analysis.
+- Standby memory analysis.
+- Memory compression detection.
+- Memory compression manipulation.
+- Memory trimming.
+- Memory priority.
+- Background memory pressure.
+- Pagefile detection.
+- Pagefile configuration.
+- Automatic pagefile modification.
+- Memory leak detection.
+- Game memory growth detection.
+- VRAM pressure.
+- Shared GPU memory pressure.
+
+STORAGE / I/O
+------------
+- Disk activity monitoring.
+- Per-process I/O monitoring.
+- I/O contention detection.
+- I/O priority.
+- Process I/O priority.
+- Storage latency.
+- SSD/HDD/NVMe detection.
+- SMART.
+- Disk health.
+- Disk benchmark.
+- Game-drive detection.
+- File-system activity analysis.
+- Windows Search/indexing analysis.
+- Background storage contention.
+- DirectStorage detection.
+- DirectStorage/storage-path analysis.
+- Storage-driver analysis.
+- Aggressive SSD tweaks.
+
+GPU
+---
+- GPU detection.
+- GPU utilization monitoring.
+- GPU VRAM monitoring.
+- GPU clock monitoring.
+- GPU power-state monitoring.
+- GPU performance/power mode.
+- NVIDIA profile management.
+- AMD profile management.
+- HAGS detection.
+- HAGS testing.
+- Shader cache analysis.
+- GPU scheduling analysis.
+- GPU thread priority.
+- GPU context priority.
+- GPU driver settings.
+- GPU driver modification.
+- GPU clock modification.
+- GPU power-limit modification.
+- GPU overclock.
+- GPU underclock.
+- Resizable BAR detection.
+- Resizable BAR modification.
+- PCIe state analysis.
+
+RENDER / FRAME PACING
+---------------------
+- Frame-time measurement.
+- Frame-time variance.
+- 1% low.
+- 0.1% low.
+- Stutter detection.
+- Render queue analysis.
+- Present queue analysis.
+- Backbuffer analysis.
+- Frame queue depth.
+- Frame pacing.
+- Frame limiter.
+- VRR detection.
+- VRR compatibility.
+- V-Sync state.
+- G-Sync/FreeSync state.
+- Reflex detection.
+- Reflex-related optimization.
+- LatencyFleX.
+- Special K techniques.
+- Frame Generation.
+- Upscaling.
+- API-specific rendering optimization.
+
+INPUT
+-----
+- Mouse detection.
+- Keyboard detection.
+- HID detection.
+- Polling-rate detection.
+- USB power-state detection.
+- USB selective-suspend analysis.
+- Mouse configuration.
+- Keyboard configuration.
+- Input latency measurement.
+- Input-to-photon measurement where possible.
+- Raw Input analysis.
+- HID interrupt latency.
+- USB interrupt analysis.
+
+NETWORK
+-------
+- Network adapter detection.
+- NIC driver detection.
+- Ping.
+- Jitter.
+- Packet loss.
+- Route/path analysis.
+- TCP state analysis.
+- UDP behavior analysis.
+- TCP/IP tuning.
+- DNS testing.
+- QoS.
+- Traffic shaping.
+- Game-specific QoS.
+- Network power management.
+- NIC offload analysis.
+- Interrupt moderation analysis.
+- RSS analysis.
+- RSC analysis.
+- Network background traffic detection.
+- Connection contention.
+- Real-time network monitoring.
+
+WINDOWS BACKGROUND / RECONDITIONING
+-----------------------------------
+- Startup analysis.
+- Startup optimization.
+- Services analysis.
+- Service optimization.
+- Scheduled-task analysis.
+- Scheduled-task optimization.
+- Background application detection.
+- Background process contention.
+- Telemetry analysis.
+- Xbox Game Bar.
+- Game DVR.
+- OneDrive/synchronization management.
+- OEM utilities.
+- RGB software.
+- AppX/UWP cleanup.
+- Windows feature cleanup.
+- Debloat.
+- Defender state analysis.
+- SysMain analysis.
+- Windows Update state.
+- Windows Update repair.
+- System integrity checking.
+- DISM/SFC state.
+
+HARDWARE TOPOLOGY
+-----------------
+- CPU topology.
+- Logical/physical core detection.
+- P/E-core detection.
+- Cache topology.
+- L1/L2/L3 information.
+- NUMA detection.
+- NUMA-aware allocation.
+- CPU package detection.
+- Socket detection.
+- GPU topology.
+- PCIe topology.
+- RAM channel detection.
+- RAM speed/timing detection.
+
+THERMAL / POWER / TELEMETRY
+---------------------------
+- CPU temperature.
+- GPU temperature.
+- VRM/board sensors.
+- CPU clock.
+- GPU clock.
+- Power draw.
+- Thermal throttling detection.
+- Power throttling detection.
+- Temperature trend.
+- Clock instability.
+- Sensor-based adaptive decisions.
+- LibreHardwareMonitor.
+- Open Hardware Monitor.
+
+DRIVER / DIAGNOSTICS
+--------------------
+- Driver inventory.
+- Driver version.
+- Driver health.
+- Driver latency detection.
+- Device error detection.
+- Event Viewer analysis.
+- ETW tracing.
+- ETW-based game analysis.
+- Windows Performance Recorder.
+- Windows Performance Analyzer.
+- GPUView.
+- PresentMon-style measurement.
+- Process Monitor-style analysis.
+- DPC/ISR analysis.
+- Crash/event correlation.
+
+GAME MODE / WINDOWS GRAPHICS
+----------------------------
+- Windows Game Mode detection.
+- Game Mode state detection.
+- Game Mode interaction.
+- Game Mode power-profile analysis.
+- CPU-set interaction.
+- Game Mode conflict detection.
+- Windows per-app graphics settings.
+- Per-game GPU preference.
+
+REGISTRY
+--------
+- Registry state detection.
+- Registry backup.
+- Registry verification.
+- Game-specific registry settings.
+- MMCSS registry settings.
+- Network registry tweaks.
+- Scheduler registry tweaks.
+- Memory registry tweaks.
+- Deep registry optimization.
+
+BIOS / FIRMWARE
+---------------
+- BIOS version detection.
+- Firmware detection.
+- Resizable BAR state.
+- XMP/EXPO detection.
+- P/E-core BIOS configuration detection.
+- C-State detection.
+- SMT/Hyper-Threading state.
+- BIOS recommendation engine.
+- Automatic BIOS modification: NOT CORE.
+- Automatic firmware flashing: NOT CORE.
+
+RGB / OEM
+---------
+- OEM software detection.
+- RGB software detection.
+- Background OEM process detection.
+- Vendor control-panel detection.
+- Replace RGB stack.
+- Disable OEM software.
+- Fan-control dependency detection.
+
+SECURITY / COMPATIBILITY
+------------------------
+- Anti-cheat detection.
+- Anti-cheat compatibility database.
+- Defender state detection.
+- Security software contention detection.
+- Firewall state.
+- Driver-signing state.
+- Protected process detection.
+- Game integrity detection.
+
+SYSTEM RESTORATION
+------------------
+- Registry backup.
+- Power-plan backup.
+- Original process priority.
+- Original affinity.
+- Original CPU Sets.
+- Original service state.
+- Original configuration.
+- Restore point.
+- Automatic rollback.
+- Crash-safe restoration.
+- Session-state tracking.
+- Detect reverted settings.
+- Verify restoration.
+
+
+============================================================
+14. TECHNIQUE DATABASE FORMAT
+============================================================
+
+Every technique should eventually contain:
+
+TECHNIQUE NAME
+--------------
+What it changes:
+Why it may help:
+Windows requirements:
+Hardware requirements:
+Game requirements:
+Supported APIs:
+Dependencies:
+Conflicts:
+Preconditions:
+Risk:
+Evidence status:
+Apply method:
+Backup method:
+Verification method:
+Measurement method:
+Rollback method:
+Known side effects:
+Known incompatibilities:
+Real-world results:
+Decision:
+KEEP / CONDITIONAL / EXPERIMENTAL / REJECT
+
+
+============================================================
+15. EVIDENCE MODEL
+============================================================
+
+Evidence levels:
+
+LEVEL 1:
+Microsoft / official technical documentation.
+
+LEVEL 2:
+Working open-source or documented implementation.
+
+LEVEL 3:
+Independent benchmark / controlled experiment.
+
+LEVEL 4:
+Repeated real-world measurements.
+
+LEVEL 5:
+Community reports / anecdotal claims.
+
+IMPORTANT:
+A technique being present in a popular optimizer does NOT prove that it improves performance.
+
+A technique being technically valid does NOT prove that it improves every game.
+
+A technique must be evaluated in the conditions where it is intended to operate.
+
+
+============================================================
+16. CROSS-CHECK PROCESS
+============================================================
+
+MASTER TECHNIQUE LIST
++
+REAL-WORLD DATA
++
+OFFICIAL TECHNICAL DOCUMENTATION
++
+IMPLEMENTATION REFERENCES
+        ↓
+FOR EACH TECHNIQUE:
+        ↓
+WHAT DOES IT ACTUALLY CHANGE?
+        ↓
+CAN IT BE IMPLEMENTED?
+        ↓
+WHEN CAN IT HELP?
+        ↓
+WHEN CAN IT HURT?
+        ↓
+WHAT DATA SUPPORTS IT?
+        ↓
+WHAT CONDITIONS MATTER?
+        ↓
+WHAT DOES IT CONFLICT WITH?
+        ↓
+CAN IT BE VERIFIED?
+        ↓
+CAN IT BE ROLLED BACK?
+        ↓
+FINAL STATUS
+
+
+============================================================
+17. COMBINATION TESTING
+============================================================
+
+Do NOT only test individual techniques.
+
+Also evaluate combinations.
+
+Example:
+
+EPP
++
+Core Parking
++
+CPU Priority
++
+CPU Affinity
++
+Background Process Management
+
+Questions:
+- Do they overlap?
+- Do they conflict?
+- Does the combination improve the target metric?
+- Does the combination create a regression?
+- Is the combination useful only under a specific bottleneck?
+- Can each part be rolled back independently?
+
+Combination evaluation:
+
+BASELINE
+→ TECHNIQUE A
+→ MEASURE
+→ TECHNIQUE B
+→ MEASURE
+→ COMBINATION
+→ MEASURE
+→ COMPARE
+→ KEEP / ROLLBACK
+
+
+============================================================
+18. SYSTEM RECONDITIONING ENGINE
+============================================================
+
+Purpose:
+Make an old/modified Windows installation more consistent and less
+burdened by unnecessary background configuration before game optimization.
+
+Process:
+
+SCAN CURRENT WINDOWS STATE
+        ↓
+FIND OLD / STALE CONFIGURATION
+        ↓
+FIND UNNECESSARY BACKGROUND LOAD
+        ↓
+FIND CONFLICTING SETTINGS
+        ↓
+COMPARE AGAINST CLEAN BASELINE
+        ↓
+SELECT SAFE RECONDITIONING ACTIONS
+        ↓
+BACKUP
+        ↓
+APPLY
+        ↓
+VERIFY
+        ↓
+MEASURE
+        ↓
+KEEP / ROLLBACK
+
+Do NOT blindly disable services, Defender, updates, or system components.
+
+
+============================================================
+19. ADAPTIVE GAME OPTIMIZATION ENGINE
+============================================================
+
+The optimizer must NOT behave as a fixed tweak pack.
+
+BAD MODEL:
+Game detected
+→ apply every tweak
+→ done
+
+TARGET MODEL:
+
+Game detected
+→ hardware profile
+→ Windows profile
+→ current-state analysis
+→ bottleneck diagnosis
+→ candidate technique generation
+→ evidence filter
+→ compatibility check
+→ dependency/conflict check
+→ backup
+→ apply
+→ verify
+→ measure
+→ keep/rollback
+→ update knowledge/session state
+
+
+============================================================
+20. IMPORTANT STRONG / EXPERIMENTAL TECHNIQUES
+============================================================
+
+These MUST NOT disappear from research, but should not automatically
+become default behavior:
+
+- HIGH priority.
+- REALTIME priority.
+- Fixed CPU affinity.
+- P-core-only allocation.
+- E-core avoidance.
+- CPU Sets.
+- IRQ affinity.
+- MSI/MSI-X changes.
+- Timer-resolution changes.
+- MMCSS registry changes.
+- GPU thread priority.
+- GPU clock/power changes.
+- Memory trimming.
+- Process suspension.
+- Aggressive service disabling.
+- Aggressive telemetry removal.
+- Aggressive network registry changes.
+- Deep registry tweaks.
+- Driver modification.
+
+They remain candidates until real-world data determines their final status.
+
+
+============================================================
+21. IMPORTANT RULES
+============================================================
+
+RULE 1:
+Do not optimize blindly.
+
+RULE 2:
+Do not assume FPS is the only objective.
+
+RULE 3:
+Do not treat a successful API call as proof of performance improvement.
+
+RULE 4:
+Measure before and after.
+
+RULE 5:
+Verify actual system state.
+
+RULE 6:
+Back up reversible state.
+
+RULE 7:
+Rollback when the result is negative.
+
+RULE 8:
+Do not apply the same technique to every hardware/game configuration.
+
+RULE 9:
+Respect dependencies and conflicts.
+
+RULE 10:
+Treat High/Realtime priority as conditional/experimental, not universal.
+
+RULE 11:
+Treat aggressive Windows debloat as conditional, not universal.
+
+RULE 12:
+Treat driver/BIOS/GPU clock modifications as experimental.
+
+RULE 13:
+Use official documentation to understand mechanisms.
+
+RULE 14:
+Use real-world data to determine practical effectiveness.
+
+RULE 15:
+Use measured results to refine future selections.
+
+RULE 16:
+Temporary game-session changes should be restored after the game exits.
+
+RULE 17:
+The optimizer must be able to detect when a previous setting has been
+reverted or changed externally.
+
+RULE 18:
+The final optimizer should be adaptive rather than a static tweak list.
+
+
+============================================================
+22. FINAL TARGET
+============================================================
+
+The finished product should function as:
+
+DETECTION
+→ DIAGNOSIS
+→ MEASUREMENT
+→ TECHNIQUE SELECTION
+→ DEPENDENCY / CONFLICT CHECK
+→ BACKUP
+→ APPLY
+→ VERIFY
+→ MEASURE
+→ KEEP / ROLLBACK
+→ SESSION STATE UPDATE
+→ CONTINUOUS MONITORING
+→ RESTORE
+
+The core idea:
+
+DO NOT ASK:
+"Which gaming tweaks should we apply?"
+
+ASK:
+"What is happening on this machine, in this game, right now,
+and which technically supported, evidence-backed technique is
+appropriate for this exact condition?"
+
+END OF MASTER DESIGN SPECIFICATION
